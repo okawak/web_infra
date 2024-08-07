@@ -1,0 +1,7 @@
+---
+- name: Configure Nginx and Wireguard
+  hosts: webservers
+  become: true
+  roles:
+      - nginx
+      - wireguard

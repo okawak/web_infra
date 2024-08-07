@@ -1,0 +1,8 @@
+.terraform
+.terraform*
+.pluralith
+.vscode
+.terraform.lock.hcl
+plan*
+terraform.tfstate*
+*.txt
