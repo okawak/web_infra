@@ -46,6 +46,17 @@ resource "oci_core_security_list" "my_security_list" {
   }
 
   ingress_security_rules {
+    # 17L udp
+    protocol = 17
+    source   = "0.0.0.0/0"
+
+    udp_options {
+      min = 51820
+      max = 51820
+    }
+  }
+
+  ingress_security_rules {
     # 1: ICMP
     protocol  = 1
     source    = "0.0.0.0/0"

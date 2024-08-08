@@ -3,11 +3,12 @@ resource "oci_core_instance" "oraclelinux_instance" {
   compartment_id      = oci_identity_compartment.my_compartment.id
   display_name        = "okawak_webserver"
 
-  shape = "VM.Standard2.1"
-  #shape_config {
-  #  ocpus         = 1
-  #  memory_in_gbs = 2
-  #}
+  #shape = "VM.Standard2.1"
+  shape = "VM.Standard.E3.Flex"
+  shape_config {
+    ocpus         = 1
+    memory_in_gbs = 2
+  }
 
   source_details {
     # oracle linux 9.x
