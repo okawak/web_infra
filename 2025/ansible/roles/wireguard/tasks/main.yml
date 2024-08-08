@@ -1,0 +1,155 @@
+---
+- name: Update all packages
+  dnf:
+      name: "*"
+      state: latest
+      releasever: latest
+
+- name: Install WireGuard tools
+  dnf:
+      name:
+          - wireguard-tools
+          - iptables
+      state: present
+
+- name: Enable IP forwarding
+  sysctl:
+      name: net.ipv4.conf.all.forwarding
+      value: "1"
+      state: present
+      reload: yes
+
+- name: Ensure IP forwarding setting is persisted in /etc/sysctl.d/forwarding.conf
+  lineinfile:
+      path: /etc/sysctl.d/forwarding.conf
+      line: "net.ipv4.conf.all.forwarding=1"
+      create: yes
+
+- name: Create WireGuard directory
+  file:
+      path: /etc/wireguard
+      state: directory
+      mode: "0700"
+
+- name: Generate private key
+  command:
+      cmd: wg genkey
+      creates: /etc/wireguard/privatekey
+  register: private_key
+
+- name: Save private key
+  copy:
+      content: "{{ private_key.stdout }}"
+      dest: /etc/wireguard/privatekey
+      force: false
+      mode: "0600"
+
+- name: Slurp the private key content
+  slurp:
+      src: /etc/wireguard/privatekey
+  register: private_key_file
+
+- name: Generate public key
+  shell:
+      cmd: echo "{{ private_key.stdout }}" | wg pubkey
+      creates: /etc/wireguard/publickey
+  register: public_key
+
+- name: Save public key
+  copy:
+      content: "{{ public_key.stdout }}"
+      dest: /etc/wireguard/publickey
+      force: false
+      mode: "0600"
+
+- name: Slurp the public key content
+  slurp:
+      src: /etc/wireguard/publickey
+  register: public_key_file
+
+- name: Display the public key
+  debug:
+      msg: "{{ public_key_file.content | b64decode }}"
+
+- name: Generate preshared key
+  command:
+      cmd: wg genpsk
+      creates: /etc/wireguard/psk
+  register: preshared_key
+
+- name: Save preshared key
+  copy:
+      content: "{{ preshared_key.stdout }}"
+      dest: /etc/wireguard/psk
+      force: false
+      mode: "0600"
+
+- name: Slurp the preshared key content
+  slurp:
+      src: /etc/wireguard/psk
+  register: preshared_key_file
+
+- name: Display the preshared key
+  debug:
+      msg: "{{ preshared_key_file.content | b64decode }}"
+
+- name: Copy client1 public key from local machine to remote
+  copy:
+      src: "{{ wireguard_client1_publickey_path }}"
+      dest: /tmp/client1_public_key.pub
+      mode: "0600"
+
+- name: Slurp the client1 public key content
+  slurp:
+      src: /tmp/client1_public_key.pub
+  register: client1_public_key_file
+
+- name: Copy client2 public key from local machine to remote
+  copy:
+      src: "{{ wireguard_client2_publickey_path }}"
+      dest: /tmp/client2_public_key.pub
+      mode: "0600"
+
+- name: Slurp the client2 public key content
+  slurp:
+      src: /tmp/client2_public_key.pub
+  register: client2_public_key_file
+
+- name: Copy client3 public key from local machine to remote
+  copy:
+      src: "{{ wireguard_client3_publickey_path }}"
+      dest: /tmp/client3_public_key.pub
+      mode: "0600"
+
+- name: Slurp the client3 public key content
+  slurp:
+      src: /tmp/client3_public_key.pub
+  register: client3_public_key_file
+
+- name: Create WireGuard config from template
+  template:
+      src: wg0.conf.j2
+      dest: /etc/wireguard/wg0.conf
+      mode: "0600"
+  vars:
+      privatekey: "{{ private_key_file.content | b64decode }}"
+      presharedkey: "{{ preshared_key_file.content | b64decode }}"
+      client1_publickey: "{{ client1_public_key_file.content | b64decode }}"
+      client2_publickey: "{{ client2_public_key_file.content | b64decode }}"
+      client3_publickey: "{{ client3_public_key_file.content | b64decode }}"
+
+- name: Enable and start WireGuard
+  systemd:
+      name: wg-quick@wg0
+      enabled: yes
+      state: started
+
+- name: delete wg0 link
+  command:
+      cmd: ip link delete wg0
+
+- name: Restart service wireguard, in all cases
+  systemd:
+      name: wg-quick@wg0
+      state: restarted
+  changed_when: no

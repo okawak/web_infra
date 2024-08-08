@@ -1,0 +1,4 @@
+domain_name: okawak.net
+wireguard_client1_publickey_path: ~/.ssh/client1.pub
+wireguard_client2_publickey_path: ~/.ssh/client2.pub
+wireguard_client3_publickey_path: ~/.ssh/client3.pub
